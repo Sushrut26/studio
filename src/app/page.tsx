@@ -1,7 +1,6 @@
 import type { Question } from "@/types";
 import Header from "@/components/Header";
 import QuestionCard from "@/components/QuestionCard";
-import AiQuestionSuggester from "@/components/AiQuestionSuggester";
 
 const questions: Question[] = [
   {
@@ -61,7 +60,6 @@ export default function Home() {
       <Header />
       <main className="container mx-auto max-w-2xl flex-1 px-4 py-8">
         <div className="space-y-6">
-          <AiQuestionSuggester questions={questions} />
           <h2 className="text-xl font-semibold tracking-tight">Recent Polls</h2>
           {questions.map((q) => (
             <QuestionCard key={q.id} question={q} />
