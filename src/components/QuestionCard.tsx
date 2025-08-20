@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
@@ -8,8 +8,11 @@ import { Progress } from "@/components/ui/progress";
 import { MessageCircle } from "lucide-react";
 import type { Question } from "@/types";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function QuestionCard({ question }: { question: Question }) {
+  const { user } = useAuth();
   const [interactionState, setInteractionState] = useState<'idle' | 'voting' | 'voted'>('idle');
   const [userVote, setUserVote] = useState<"yes" | "no" | null>(null);
   const [yesVotes, setYesVotes] = useState(question.initialYesVotes);
@@ -19,17 +22,54 @@ export default function QuestionCard({ question }: { question: Question }) {
   const yesPercentage = totalVotes > 0 ? Math.round((yesVotes / totalVotes) * 100) : 0;
   const noPercentage = totalVotes > 0 ? 100 - yesPercentage : 0;
 
-  const handleVote = (vote: "yes" | "no") => {
-    if (userVote) return; 
+  const handleVote = async (vote: "yes" | "no") => {
+    if (userVote) return;
 
     setInteractionState('voted');
     setUserVote(vote);
-    if (vote === "yes") {
-      setYesVotes(prev => prev + 1);
-    } else {
-      setNoVotes(prev => prev + 1);
+
+    await supabase.from('votes').insert({
+      question_id: question.id,
+      user_id: user?.uid,
+      value: vote === 'yes' ? 1 : -1,
+    });
+
+    const { data } = await supabase
+      .from('questions')
+      .select('yes_votes,no_votes')
+      .eq('id', question.id)
+      .single();
+
+    if (data) {
+      setYesVotes(data.yes_votes ?? 0);
+      setNoVotes(data.no_votes ?? 0);
     }
   };
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('votes')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'votes', filter: `question_id=eq.${question.id}` },
+        async () => {
+          const { data } = await supabase
+            .from('questions')
+            .select('yes_votes,no_votes')
+            .eq('id', question.id)
+            .single();
+          if (data) {
+            setYesVotes(data.yes_votes ?? 0);
+            setNoVotes(data.no_votes ?? 0);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [question.id]);
   
   const showVotingOptions = interactionState === 'voting';
   const showResults = interactionState === 'voted';
