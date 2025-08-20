@@ -1,12 +1,12 @@
-insert into public.users (id, username)
+insert into public.users (id, username, role)
 values
-  ('00000000-0000-0000-0000-000000000001', 'alice'),
-  ('00000000-0000-0000-0000-000000000002', 'bob');
+  ('00000000-0000-0000-0000-000000000001', 'alice', 'admin'),
+  ('00000000-0000-0000-0000-000000000002', 'bob', 'user');
 
-insert into public.questions (id, user_id, title, body)
+insert into public.questions (id, user_id, title, body, status)
 values
-  ('00000000-0000-0000-0000-000000000101', '00000000-0000-0000-0000-000000000001', 'What is Supabase?', 'Can someone explain what Supabase is?'),
-  ('00000000-0000-0000-0000-000000000102', '00000000-0000-0000-0000-000000000002', 'How to use Next.js?', 'Looking for resources about Next.js.');
+  ('00000000-0000-0000-0000-000000000101', '00000000-0000-0000-0000-000000000001', 'What is Supabase?', 'Can someone explain what Supabase is?', 'active'),
+  ('00000000-0000-0000-0000-000000000102', '00000000-0000-0000-0000-000000000002', 'How to use Next.js?', 'Looking for resources about Next.js.', 'closed');
 
 insert into public.comments (id, question_id, user_id, content)
 values
