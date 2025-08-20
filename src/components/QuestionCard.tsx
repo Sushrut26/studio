@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
@@ -8,31 +8,79 @@ import { Progress } from "@/components/ui/progress";
 import { MessageCircle } from "lucide-react";
 import type { Question } from "@/types";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function QuestionCard({ question }: { question: Question }) {
+  const { user } = useAuth();
   const [interactionState, setInteractionState] = useState<'idle' | 'voting' | 'voted'>('idle');
   const [userVote, setUserVote] = useState<"yes" | "no" | null>(null);
-  const [yesVotes, setYesVotes] = useState(question.initialYesVotes);
-  const [noVotes, setNoVotes] = useState(question.initialNoVotes);
+  const [yesVotes, setYesVotes] = useState(question.vote_yes_count);
+  const [noVotes, setNoVotes] = useState(question.vote_no_count);
+
+  const fetchCounts = async () => {
+    const { data } = await supabase
+      .from('questions')
+      .select('vote_yes_count, vote_no_count')
+      .eq('id', question.id)
+      .single();
+    if (data) {
+      setYesVotes(data.vote_yes_count);
+      setNoVotes(data.vote_no_count);
+    }
+  };
+
+  useEffect(() => {
+    if (!user) return;
+
+    const loadUserVote = async () => {
+      const { data } = await supabase
+        .from('votes')
+        .select('vote')
+        .eq('question_id', question.id)
+        .eq('user_id', user.uid)
+        .single();
+      if (data) {
+        setUserVote(data.vote);
+        setInteractionState('voted');
+      }
+    };
+
+    loadUserVote();
+
+    const channel = supabase
+      .channel('public:votes')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'votes', filter: `question_id=eq.${question.id}` },
+        () => fetchCounts()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, question.id]);
 
   const totalVotes = yesVotes + noVotes;
   const yesPercentage = totalVotes > 0 ? Math.round((yesVotes / totalVotes) * 100) : 0;
   const noPercentage = totalVotes > 0 ? 100 - yesPercentage : 0;
 
-  const handleVote = (vote: "yes" | "no") => {
-    if (userVote) return; 
+  const handleVote = async (vote: "yes" | "no") => {
+    if (!user || userVote) return;
 
     setInteractionState('voted');
     setUserVote(vote);
-    if (vote === "yes") {
-      setYesVotes(prev => prev + 1);
-    } else {
-      setNoVotes(prev => prev + 1);
-    }
+    await supabase.from('votes').insert({
+      question_id: question.id,
+      user_id: user.uid,
+      vote,
+    });
+    await fetchCounts();
   };
-  
-  const showVotingOptions = interactionState === 'voting';
-  const showResults = interactionState === 'voted';
+
+  const showVotingOptions = interactionState === 'voting' && !userVote;
+  const showResults = interactionState === 'voted' || !!userVote;
 
   return (
     <Card 
