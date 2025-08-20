@@ -7,8 +7,8 @@ export type Question = {
   id: number;
   author: User;
   questionText: string;
-  initialYesVotes: number;
-  initialNoVotes: number;
+  vote_yes_count: number;
+  vote_no_count: number;
   commentsCount: number;
   createdAt: string;
 };
