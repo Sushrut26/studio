@@ -8,12 +8,14 @@ import { Progress } from "@/components/ui/progress";
 import { MessageCircle } from "lucide-react";
 import type { Question } from "@/types";
 import { cn } from "@/lib/utils";
+import CommentSection from "@/components/CommentSection";
 
 export default function QuestionCard({ question }: { question: Question }) {
   const [interactionState, setInteractionState] = useState<'idle' | 'voting' | 'voted'>('idle');
   const [userVote, setUserVote] = useState<"yes" | "no" | null>(null);
   const [yesVotes, setYesVotes] = useState(question.initialYesVotes);
   const [noVotes, setNoVotes] = useState(question.initialNoVotes);
+  const [showComments, setShowComments] = useState(false);
 
   const totalVotes = yesVotes + noVotes;
   const yesPercentage = totalVotes > 0 ? Math.round((yesVotes / totalVotes) * 100) : 0;
@@ -88,9 +90,22 @@ export default function QuestionCard({ question }: { question: Question }) {
             </div>
           )}
         </div>
-        <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
-          <MessageCircle className="h-4 w-4" />
-          <span>{question.commentsCount} comments</span>
+        <div className="mt-4 w-full space-y-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="flex items-center gap-2 text-muted-foreground"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowComments((prev) => !prev);
+            }}
+          >
+            <MessageCircle className="h-4 w-4" />
+            <span>{question.commentsCount} comments</span>
+          </Button>
+          {showComments && (
+            <CommentSection questionId={question.id} />
+          )}
         </div>
       </CardFooter>
     </Card>
