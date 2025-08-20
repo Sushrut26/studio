@@ -1,60 +1,28 @@
-import type { Question } from "@/types";
+"use client";
+
+import { useEffect, useRef } from "react";
 import Header from "@/components/Header";
 import QuestionCard from "@/components/QuestionCard";
-
-const questions: Question[] = [
-  {
-    id: 1,
-    author: {
-      name: 'Startup Sam',
-      avatarUrl: 'https://placehold.co/40x40.png',
-    },
-    questionText: 'Is remote work the future for all tech companies?',
-    initialYesVotes: 256,
-    initialNoVotes: 88,
-    commentsCount: 64,
-    createdAt: '2h ago',
-  },
-  {
-    id: 2,
-    author: {
-      name: 'Design Dana',
-      avatarUrl: 'https://placehold.co/40x40.png',
-    },
-    questionText: 'Should designers learn to code?',
-    initialYesVotes: 420,
-    initialNoVotes: 150,
-    commentsCount: 128,
-    createdAt: '5h ago',
-  },
-  {
-    id: 3,
-    author: {
-      name: 'Foodie Frank',
-      avatarUrl: 'https://placehold.co/40x40.png',
-    },
-    questionText: 'Is pineapple on pizza a crime against humanity?',
-    initialYesVotes: 180,
-    initialNoVotes: 320,
-    commentsCount: 256,
-    createdAt: '1d ago',
-  },
-  {
-    id: 4,
-    author: {
-      name: 'Travel Tina',
-      avatarUrl: 'https://placehold.co/40x40.png',
-    },
-    questionText: 'Do you prefer mountains or beaches for a vacation?',
-    initialYesVotes: 512,
-    initialNoVotes: 488,
-    commentsCount: 96,
-    createdAt: '2d ago',
-  },
-];
-
+import { useFeed } from "@/hooks/useFeed";
 
 export default function Home() {
+  const { questions, loadMore, hasMore } = useFeed();
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!hasMore) return;
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) {
+        loadMore();
+      }
+    });
+    const node = loadMoreRef.current;
+    if (node) observer.observe(node);
+    return () => {
+      if (node) observer.unobserve(node);
+    };
+  }, [loadMore, hasMore]);
+
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
@@ -64,6 +32,7 @@ export default function Home() {
           {questions.map((q) => (
             <QuestionCard key={q.id} question={q} />
           ))}
+          {hasMore && <div ref={loadMoreRef} className="h-1" />}
         </div>
       </main>
     </div>
