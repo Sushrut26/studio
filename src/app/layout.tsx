@@ -1,6 +1,7 @@
-import type {Metadata} from 'next';
+import type { Metadata } from 'next';
 import './globals.css';
-import { Toaster } from "@/components/ui/toaster";
+import { Toaster } from '@/components/ui/toaster';
+import { AuthProvider, AuthGuard } from '@/contexts/AuthContext';
 
 export const metadata: Metadata = {
   title: 'PollPulse',
@@ -16,12 +17,21 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
       </head>
       <body className="font-body antialiased bg-background" suppressHydrationWarning>
-        {children}
-        <Toaster />
+        <AuthProvider>
+          <AuthGuard>{children}</AuthGuard>
+          <Toaster />
+        </AuthProvider>
       </body>
     </html>
   );
