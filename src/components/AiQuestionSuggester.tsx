@@ -1,7 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { suggestRelevantQuestions } from "@/ai/flows/suggest-relevant-questions";
+import {
+  suggestRelevantQuestions,
+  type SuggestRelevantQuestionsOutput,
+} from "@/ai/flows/suggest-relevant-questions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -31,9 +34,10 @@ export default function AiQuestionSuggester({ questions }: { questions: Question
     const questionList = questions.map(q => q.questionText).join("\n");
     
     try {
-      const result = await suggestRelevantQuestions({ interests, questionList });
+      const result: SuggestRelevantQuestionsOutput =
+        await suggestRelevantQuestions({ interests, questionList });
       if (result && result.suggestedQuestions) {
-        setSuggestions(result.suggestedQuestions.map(q => q.questionText));
+        setSuggestions(result.suggestedQuestions.map((q) => q.questionText));
       }
     } catch (e) {
       toast({

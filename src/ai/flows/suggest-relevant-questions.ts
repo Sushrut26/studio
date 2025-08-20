@@ -19,22 +19,27 @@ const SuggestRelevantQuestionsInputSchema = z.object({
     .string()
     .describe('A list of the most recent questions asked.'),
 });
-export type SuggestRelevantQuestionsInput = z.infer<
-  typeof SuggestRelevantQuestionsInputSchema
->;
+export type SuggestRelevantQuestionsInput = {
+  interests: string;
+  questionList: string;
+};
 
 const SuggestedQuestionSchema = z.object({
   questionText: z.string().describe('A relevant question to ask the user.'),
 });
+
+export type SuggestedQuestion = {
+  questionText: string;
+};
 
 const SuggestRelevantQuestionsOutputSchema = z.object({
   suggestedQuestions: z
     .array(SuggestedQuestionSchema)
     .describe('An array of relevant questions based on user interests.'),
 });
-export type SuggestRelevantQuestionsOutput = z.infer<
-  typeof SuggestRelevantQuestionsOutputSchema
->;
+export type SuggestRelevantQuestionsOutput = {
+  suggestedQuestions: SuggestedQuestion[];
+};
 
 export async function suggestRelevantQuestions(
   input: SuggestRelevantQuestionsInput
@@ -62,7 +67,7 @@ const suggestRelevantQuestionsFlow = ai.defineFlow(
     inputSchema: SuggestRelevantQuestionsInputSchema,
     outputSchema: SuggestRelevantQuestionsOutputSchema,
   },
-  async input => {
+  async (input: SuggestRelevantQuestionsInput) => {
     const {output} = await prompt(input);
     return output!;
   }
