@@ -4,7 +4,8 @@ export type User = {
 };
 
 export type Question = {
-  id: number;
+  id: string;
+  authorId: string;
   author: User;
   questionText: string;
   initialYesVotes: number;
