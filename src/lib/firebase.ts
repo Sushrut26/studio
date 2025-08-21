@@ -1,4 +1,4 @@
-import { initializeApp, getApps, getApp } from 'firebase/app';
+import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 
 // Hardcoded Firebase config to prevent any environment variable loading issues.
@@ -11,7 +11,13 @@ const firebaseConfig = {
   appId: '1:76495353023:web:0b0432b13e1f0e42517855',
 };
 
-const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+// Initialize Firebase
+let app: FirebaseApp;
+if (getApps().length === 0) {
+  app = initializeApp(firebaseConfig);
+} else {
+  app = getApp();
+}
 
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
