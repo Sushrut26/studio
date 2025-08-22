@@ -8,8 +8,12 @@ import { Progress } from "@/components/ui/progress";
 import { MessageCircle } from "lucide-react";
 import type { Question } from "@/types";
 import { cn } from "@/lib/utils";
+
+import { useFollow } from "@/hooks/useFollow";
+
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
+
 
 export default function QuestionCard({ question }: { question: Question }) {
   const { user } = useAuth();
@@ -17,6 +21,7 @@ export default function QuestionCard({ question }: { question: Question }) {
   const [userVote, setUserVote] = useState<"yes" | "no" | null>(null);
   const [yesVotes, setYesVotes] = useState(question.initialYesVotes);
   const [noVotes, setNoVotes] = useState(question.initialNoVotes);
+  const { isFollowing, toggleFollow, loading: followLoading } = useFollow(question.authorId);
 
   const totalVotes = yesVotes + noVotes;
   const yesPercentage = totalVotes > 0 ? Math.round((yesVotes / totalVotes) * 100) : 0;
@@ -94,7 +99,17 @@ export default function QuestionCard({ question }: { question: Question }) {
               <p className="text-xs text-muted-foreground">{question.createdAt}</p>
             </div>
           </div>
-          <Button variant="ghost" size="sm">Follow</Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleFollow();
+            }}
+            disabled={followLoading}
+          >
+            {isFollowing ? "Unfollow" : "Follow"}
+          </Button>
         </div>
       </CardHeader>
       <CardContent>
