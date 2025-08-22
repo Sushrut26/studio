@@ -29,8 +29,10 @@ const AuthContext = createContext<AuthContextValue>({
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
+  const pathname = usePathname();
 
-  // Handle auth state
+  // Keep auth state in sync
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser);
@@ -39,26 +41,35 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return unsub;
   }, []);
 
-  // Resolve redirect sign-in results (no-op if there isn't one)
+  // Resolve redirect sign-in results and navigate if needed
   useEffect(() => {
-    // Avoid double calls if SSR/hydration quirks
     let active = true;
     (async () => {
       try {
-        await getRedirectResult(auth);
-      } catch (e) {
-        // Swallow to avoid breaking page load; useful for debugging if needed
-        console.error('Redirect sign-in failed:', e);
-      } finally {
-        if (active) {
-          // nothing else to do; onAuthStateChanged will set the user
+        const result = await getRedirectResult(auth);
+        const u = result?.user ?? auth.currentUser ?? null;
+        if (!active) return;
+
+        if (u) {
+          // Ensure context reflects the signed-in user
+          setUser(u);
+          setLoading(false);
+
+          // If we landed back on /login after redirect, go home
+          if (pathname === '/login') {
+            router.replace('/');
+          }
         }
+      } catch (e) {
+        // Useful for debugging; don't throw to avoid breaking page load
+        console.error('Redirect sign-in failed:', e);
       }
     })();
     return () => {
       active = false;
     };
-  }, []);
+    // Include pathname/router so we can route out of /login after redirect
+  }, [pathname, router]);
 
   const login = async () => {
     const inIframe =
@@ -66,7 +77,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     try {
       if (inIframe) {
-        // Embedded contexts (Firebase Studio preview) often block popups.
+        // Embedded contexts (e.g., Firebase Studio preview) often block popups
         await signInWithRedirect(auth, googleProvider);
         return;
       }
@@ -109,7 +120,7 @@ export const AuthGuard = ({ children }: { children: React.ReactNode }) => {
     }
   }, [user, loading, pathname, router]);
 
-  // Optional: show nothing while deciding; you can render a spinner here
+  // Render nothing while deciding; swap for a spinner if you like
   if (loading || (!user && pathname !== '/login')) return null;
 
   return <>{children}</>;
