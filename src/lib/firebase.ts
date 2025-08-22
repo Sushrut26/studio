@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider,  } from 'firebase/auth';
 
 // Hardcoded Firebase config to prevent any environment variable loading issues.
 const firebaseConfig = {
