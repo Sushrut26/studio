@@ -54,7 +54,7 @@ export default function NewPollPage() {
       return;
     }
 
-    if (!supabaseUrl || !supabaseKey || !user) {
+    if (!user) {
       toast({
         title: "Configuration error",
         description: "Unable to create poll. Please try again later.",
@@ -66,21 +66,19 @@ export default function NewPollPage() {
     setIsSubmitting(true);
 
     try {
-      const userId = generateUUID(user.uid);
       const expiresAt = new Date();
       expiresAt.setMonth(expiresAt.getMonth() + 1);
 
-      const response = await fetch(`${supabaseUrl}/rest/v1/questions`, {
+      const idToken = await user.getIdToken();
+      const response = await fetch(`/api/questions`, {
         method: 'POST',
         headers: {
-          apikey: supabaseKey,
-          Authorization: `Bearer ${supabaseKey}`,
+          Authorization: `Bearer ${idToken}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           title: question.trim(),
           question_text: question.trim(),
-          user_id: userId,
           yes_votes: 0,
           no_votes: 0,
           comments_count: 0,

@@ -27,83 +27,26 @@ const AuthContext = createContext<AuthContextValue>({
   logout: async () => {},
 });
 
-// Function to create user in our database
+// Function to create user in our database via secure API
 const createUserInDatabase = async (firebaseUser: User) => {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  
-  if (!supabaseUrl || !supabaseKey) return;
-
   try {
-               // Generate a UUID from the Firebase UID (simple hash)
-           const generateUUID = (str: string) => {
-             // Create a simple hash from the string
-             let hash = 0;
-             for (let i = 0; i < str.length; i++) {
-               const char = str.charCodeAt(i);
-               hash = ((hash << 5) - hash) + char;
-               hash = hash & hash; // Convert to 32-bit integer
-             }
-             
-             // Convert to a proper UUID format (36 characters: 8-4-4-4-12)
-             const hashStr = Math.abs(hash).toString(16).padStart(8, '0');
-             const uuid = `${hashStr.slice(0, 8)}-${hashStr.slice(0, 4)}-${hashStr.slice(0, 4)}-${hashStr.slice(0, 4)}-${hashStr.slice(0, 12)}`;
-             
-             // Ensure it's exactly 36 characters by padding if needed
-             const paddedUuid = uuid.padEnd(36, '0');
-             
-             return paddedUuid;
-           };
-
-               const userId = generateUUID(firebaseUser.uid);
-           console.log('Creating user in database with ID:', userId);
-           console.log('Firebase UID:', firebaseUser.uid);
-
-                      // Try to create user record
-           const userResponse = await fetch(`${supabaseUrl}/rest/v1/users`, {
-             method: 'POST',
-             headers: {
-               apikey: supabaseKey,
-               Authorization: `Bearer ${supabaseKey}`,
-               'Content-Type': 'application/json',
-               'Prefer': 'resolution=merge-duplicates'
-             },
-             body: JSON.stringify({
-               id: userId,
-               username: firebaseUser.email?.split('@')[0] || 'user',
-               role: 'user'
-             }),
-           });
-
-           console.log('User creation response status:', userResponse.status, userResponse.statusText);
-           if (!userResponse.ok) {
-             const errorText = await userResponse.text();
-             console.error('User creation error:', errorText);
-           }
-
-               // Try to create profile record
-           const profileResponse = await fetch(`${supabaseUrl}/rest/v1/profiles`, {
-             method: 'POST',
-             headers: {
-               apikey: supabaseKey,
-               Authorization: `Bearer ${supabaseKey}`,
-               'Content-Type': 'application/json',
-               'Prefer': 'resolution=merge-duplicates'
-             },
-             body: JSON.stringify({
-               id: userId,
-               name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
-               avatar_url: firebaseUser.photoURL || ''
-             }),
-           });
-
-           console.log('Profile creation response status:', profileResponse.status, profileResponse.statusText);
-           if (!profileResponse.ok) {
-             const errorText = await profileResponse.text();
-             console.error('Profile creation error:', errorText);
-           }
-
-           console.log('User created in database:', userId);
+    const idToken = await firebaseUser.getIdToken();
+    const res = await fetch('/api/users/sync', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${idToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        name: firebaseUser.displayName || undefined,
+        avatar_url: firebaseUser.photoURL || undefined,
+        email: firebaseUser.email || undefined,
+      }),
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      console.error('users/sync failed:', text);
+    }
   } catch (error) {
     console.error('Error creating user in database:', error);
   }

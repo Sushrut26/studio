@@ -66,116 +66,47 @@ export default function QuestionCard({ question }: { question: Question }) {
         throw new Error('Supabase configuration missing');
       }
 
-      // Check if user already voted for this question
+      // Check if user already voted for this question (via secure API)
       try {
-        const existingRes = await fetch(
-          `${supabaseUrl}/rest/v1/votes?question_id=eq.${question.id}&user_id=eq.${userId}&select=value`,
-          {
-            headers: {
-              apikey: supabaseKey,
-              Authorization: `Bearer ${supabaseKey}`,
-            },
-          }
-        );
-        if (existingRes.ok) {
-          const existing = await existingRes.json();
-          if (Array.isArray(existing) && existing.length > 0) {
-            const prior = existing[0];
-            setInteractionState('voted');
-            setUserVote(prior?.value === 1 ? 'yes' : 'no');
-
-            // Fetch current counts to display results
-            const countsRes = await fetch(`${supabaseUrl}/rest/v1/questions?id=eq.${question.id}&select=yes_votes,no_votes`, {
-              headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
-            });
-            if (countsRes.ok) {
-              const counts = await countsRes.json();
-              if (counts && counts[0]) {
-                setYesVotes(counts[0].yes_votes ?? 0);
-                setNoVotes(counts[0].no_votes ?? 0);
-              }
-            }
-
-            toast({ title: 'Already voted', description: 'You have already voted on this poll.' });
-            setIsVoting(false);
-            return;
-          }
-        }
-      } catch (preErr) {
-        console.log('Pre-check vote lookup failed; continuing to insert.', preErr);
-      }
-      
-      // Insert vote using REST API
-      const votePayload = {
-        question_id: question.id,
-        user_id: userId,
-        value: vote === 'yes' ? 1 : -1,
-      };
-
-      const voteResponse = await fetch(`${supabaseUrl}/rest/v1/votes`, {
-        method: 'POST',
-        headers: {
-          apikey: supabaseKey,
-          Authorization: `Bearer ${supabaseKey}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'resolution=merge-duplicates,return=representation'
-        },
-        body: JSON.stringify(votePayload),
-      });
-
-      console.log('Vote response status:', voteResponse.status, voteResponse.statusText);
-      
-      if (!voteResponse.ok) {
-        const errorText = await voteResponse.text();
-        console.error('Vote insert error response:', errorText);
-
-        // Handle duplicate key by showing results instead of updating
-        if (voteResponse.status === 409 || errorText.includes('23505') || errorText.toLowerCase().includes('duplicate')) {
-          console.log('Duplicate vote detected. Showing existing results.');
-
-          // Look up prior vote to reflect selection
-          try {
-            const priorRes = await fetch(`${supabaseUrl}/rest/v1/votes?question_id=eq.${question.id}&user_id=eq.${userId}&select=value`, {
-              headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
-            });
-            if (priorRes.ok) {
-              const arr = await priorRes.json();
-              if (Array.isArray(arr) && arr.length > 0) {
-                setUserVote(arr[0]?.value === 1 ? 'yes' : 'no');
-              }
-            }
-          } catch (ignored) {}
-
-          // Fetch current counts
-          try {
-            const countsRes = await fetch(`${supabaseUrl}/rest/v1/questions?id=eq.${question.id}&select=yes_votes,no_votes`, {
-              headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
-            });
-            if (countsRes.ok) {
-              const counts = await countsRes.json();
-              if (counts && counts[0]) {
-                setYesVotes(counts[0].yes_votes ?? 0);
-                setNoVotes(counts[0].no_votes ?? 0);
-              }
-            }
-          } catch (ignored) {}
-
+        const idToken = await user.getIdToken();
+        const existingRes = await fetch(`/api/votes`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${idToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question_id: question.id, value: vote === 'yes' ? 1 : -1 }),
+        });
+        if (existingRes.status === 409) {
+          const dup = await existingRes.json();
           setInteractionState('voted');
+          setUserVote(dup?.value === 1 ? 'yes' : 'no');
+          if (dup?.counts) {
+            setYesVotes(dup.counts.yes_votes ?? 0);
+            setNoVotes(dup.counts.no_votes ?? 0);
+          }
           toast({ title: 'Already voted', description: 'You have already voted on this poll.' });
           setIsVoting(false);
           return;
-        } else {
-          throw new Error(`Failed to insert vote: ${voteResponse.status} ${voteResponse.statusText} - ${errorText}`);
         }
+        if (!existingRes.ok) {
+          const txt = await existingRes.text();
+          throw new Error(`Vote API failed: ${existingRes.status} ${existingRes.statusText} - ${txt}`);
+        }
+        // If ok and not 409, this was a fresh insert; continue to update counts below
+      } catch (preErr) {
+        console.log('Pre-check vote lookup failed; continuing to insert.', preErr);
       }
-
-      let voteData = null;
+      // After successful POST (fresh insert), fetch counts
       try {
-        voteData = await voteResponse.json();
-        console.log('Vote insert result:', voteData);
-      } catch (error) {
-        console.log('Vote insert successful (empty response)');
-      }
+        const countsRes = await fetch(`${supabaseUrl}/rest/v1/questions?id=eq.${question.id}&select=yes_votes,no_votes`, {
+          headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
+        });
+        if (countsRes.ok) {
+          const counts = await countsRes.json();
+          if (counts && counts[0]) {
+            setYesVotes(counts[0].yes_votes ?? 0);
+            setNoVotes(counts[0].no_votes ?? 0);
+          }
+        }
+      } catch (ignored) {}
 
       // Update question vote counts
       const questionResponse = await fetch(`${supabaseUrl}/rest/v1/questions?id=eq.${question.id}&select=yes_votes,no_votes`, {
