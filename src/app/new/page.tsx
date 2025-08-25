@@ -10,40 +10,105 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+
+  // Function to generate UUID from Firebase UID (same as in AuthContext)
+  const generateUUID = (str: string) => {
+    // Create a simple hash from the string
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    
+    // Convert to a proper UUID format (36 characters: 8-4-4-4-12)
+    const hashStr = Math.abs(hash).toString(16).padStart(8, '0');
+    const uuid = `${hashStr.slice(0, 8)}-${hashStr.slice(0, 4)}-${hashStr.slice(0, 4)}-${hashStr.slice(0, 4)}-${hashStr.slice(0, 12)}`;
+    
+    // Ensure it's exactly 36 characters by padding if needed
+    const paddedUuid = uuid.padEnd(36, '0');
+    
+    return paddedUuid;
+  };
 
 export default function NewPollPage() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const router = useRouter();
   const [question, setQuestion] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!question.trim() || !supabaseUrl || !supabaseKey || !user) return;
+    
+    if (!question.trim()) {
+      toast({
+        title: "Question required",
+        description: "Please enter a question for your poll.",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    const expiresAt = new Date();
-    expiresAt.setMonth(expiresAt.getMonth() + 1);
+    if (!supabaseUrl || !supabaseKey || !user) {
+      toast({
+        title: "Configuration error",
+        description: "Unable to create poll. Please try again later.",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    await fetch(`${supabaseUrl}/rest/v1/questions`, {
-      method: 'POST',
-      headers: {
-        apikey: supabaseKey,
-        Authorization: `Bearer ${supabaseKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        question_text: question.trim(),
-        author_id: user.uid,
-        yes_votes: 0,
-        no_votes: 0,
-        comments_count: 0,
-        expires_at: expiresAt.toISOString(),
-      }),
-    });
+    setIsSubmitting(true);
 
-    router.push('/');
+    try {
+      const userId = generateUUID(user.uid);
+      const expiresAt = new Date();
+      expiresAt.setMonth(expiresAt.getMonth() + 1);
+
+      const response = await fetch(`${supabaseUrl}/rest/v1/questions`, {
+        method: 'POST',
+        headers: {
+          apikey: supabaseKey,
+          Authorization: `Bearer ${supabaseKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: question.trim(),
+          question_text: question.trim(),
+          user_id: userId,
+          yes_votes: 0,
+          no_votes: 0,
+          comments_count: 0,
+          expires_at: expiresAt.toISOString(),
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(`Failed to create poll: ${response.status} ${response.statusText} - ${errorData}`);
+      }
+
+      toast({
+        title: "Poll created!",
+        description: "Your poll has been successfully created.",
+      });
+
+      router.push('/');
+    } catch (error) {
+      console.error('Error creating poll:', error);
+      toast({
+        title: "Failed to create poll",
+        description: error instanceof Error ? error.message : "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -71,15 +136,19 @@ export default function NewPollPage() {
                     placeholder="e.g., Is pineapple on pizza a crime?"
                     value={question}
                     onChange={(e) => setQuestion(e.target.value)}
+                    disabled={isSubmitting}
+                    required
                   />
                 </div>
               </div>
             </CardContent>
             <CardFooter className="flex justify-end gap-2">
-              <Button variant="outline" asChild>
+              <Button variant="outline" asChild disabled={isSubmitting}>
                 <Link href="/">Cancel</Link>
               </Button>
-              <Button type="submit">Create Poll</Button>
+              <Button type="submit" disabled={isSubmitting || !question.trim()}>
+                {isSubmitting ? "Creating..." : "Create Poll"}
+              </Button>
             </CardFooter>
           </form>
         </Card>
