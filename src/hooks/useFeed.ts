@@ -26,42 +26,22 @@ export function useFeed(pageSize = 10) {
   const [error, setError] = useState<string | null>(null);
 
   const fetchFollowedIds = useCallback(async (): Promise<string[]> => {
-    if (!user || !supabaseUrl || !supabaseKey) return [];
-    
+    if (!user) return [];
     try {
-      const userId = firebaseUidToUuid(user.uid);
-      console.log('Fetching follows for user ID:', userId);
-      
-      const res = await fetch(
-        `${supabaseUrl}/rest/v1/follows?select=following_id&follower_id=eq.${encodeURIComponent(userId)}`,
-        {
-          headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
-        }
-      );
-      
-      console.log('Follows response status:', res.status, res.statusText);
-      
-      if (!res.ok) {
-        // If user doesn't exist in follows table yet, that's okay - just return empty array
-        if (res.status === 400 || res.status === 401 || res.status === 404) {
-          console.log('User not found in follows table or no follows exist, continuing without follows');
-          return [];
-        }
-        console.error('Failed to fetch followed IDs:', res.status, res.statusText);
-        return [];
-      }
-      
-      const data: FollowResponse[] = await res.json();
-      console.log('Follows data:', data);
-      return data.map((f: FollowResponse) => f.following_id);
-    } catch (err) {
-      console.error('Error fetching followed IDs:', err);
+      const idToken = await user.getIdToken();
+      const res = await fetch(`/api/follows`, {
+        headers: { Authorization: `Bearer ${idToken}` },
+      });
+      if (!res.ok) return [];
+      const data: { following_id: string }[] = await res.json();
+      return data.map((f) => f.following_id);
+    } catch {
       return [];
     }
   }, [user]);
 
   const loadMore = useCallback(async () => {
-    if (loading || !hasMore || !supabaseUrl || !supabaseKey) return;
+    if (loading || !hasMore) return;
     
     setLoading(true);
     setError(null);
@@ -72,23 +52,10 @@ export function useFeed(pageSize = 10) {
       const from = page * pageSize;
       const to = from + pageSize - 1;
       
-      // Debug logging
-      console.log('Making API call to:', `${supabaseUrl}/rest/v1/questions?select=id,question_text,yes_votes,no_votes,comments_count,created_at,author_id&order=created_at.desc`);
-      console.log('Headers:', {
-        apikey: supabaseKey ? 'SET' : 'NOT SET',
-        Authorization: supabaseKey ? 'SET' : 'NOT SET'
+      const idToken = await user?.getIdToken();
+      const res = await fetch(`/api/questions?page=${page}&pageSize=${pageSize}`, {
+        headers: { Authorization: `Bearer ${idToken}` },
       });
-      
-                   const res = await fetch(
-               `${supabaseUrl}/rest/v1/questions?select=id,question_text,yes_votes,no_votes,comments_count,created_at,user_id&order=created_at.desc`,
-        {
-          headers: {
-            apikey: supabaseKey,
-            Authorization: `Bearer ${supabaseKey}`,
-            Range: `${from}-${to}`,
-          },
-        }
-      );
       
       console.log('Response status:', res.status, res.statusText);
       
@@ -98,41 +65,10 @@ export function useFeed(pageSize = 10) {
         throw new Error(`Failed to fetch questions: ${res.status} ${res.statusText} - ${errorText}`);
       }
       
-      const data: QuestionResponse[] = await res.json();
-      console.log('Questions data:', data);
+      const { items } = await res.json();
+      const data: QuestionResponse[] = items;
       
-      // Fetch profiles separately for each question
-                   const questionsWithProfiles = await Promise.all(
-               data.map(async (q: QuestionResponse) => {
-                 try {
-                   const profileRes = await fetch(
-                     `${supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(q.user_id)}`,
-              {
-                headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
-              }
-            );
-            
-            let profile = null;
-            if (profileRes.ok) {
-              const profileData = await profileRes.json();
-              profile = profileData[0];
-            }
-            
-            return {
-              ...q,
-              profile
-            };
-          } catch (err) {
-            console.error('Error fetching profile for question:', q.id, err);
-            return {
-              ...q,
-              profile: null
-            };
-          }
-        })
-      );
-      
-                   const mapped: QuestionWithAuthorId[] = questionsWithProfiles.map((q: any) => ({
+      const mapped: QuestionWithAuthorId[] = data.map((q: any) => ({
                id: q.id,
                authorId: q.user_id,
         author: {
