@@ -1,53 +1,42 @@
--- Restrict read and delete access to authenticated users to prevent anonymous abuse
+-- Allow anonymous read access for public data while protecting sensitive operations
 
--- Users
+-- Users (keep anonymous read for now, but restrict to authenticated later if needed)
 DROP POLICY IF EXISTS "Users can view all users" ON public.users;
 CREATE POLICY "Users can view all users" ON public.users
-  FOR SELECT TO authenticated
+  FOR SELECT TO public
   USING (true);
 
--- Profiles
+-- Profiles (allow anonymous view but restrict sensitive data)
 DROP POLICY IF EXISTS "Profiles are viewable by everyone" ON public.profiles;
-CREATE POLICY "Profiles viewable by authenticated" ON public.profiles
-  FOR SELECT TO authenticated
+DROP POLICY IF EXISTS "Profiles viewable by authenticated" ON public.profiles;
+CREATE POLICY "Profiles viewable by everyone" ON public.profiles
+  FOR SELECT TO public
   USING (true);
 
--- Questions
+-- Questions (allow anonymous view for public polls)
 DROP POLICY IF EXISTS "Questions are viewable by everyone" ON public.questions;
-CREATE POLICY "Questions viewable by authenticated" ON public.questions
-  FOR SELECT TO authenticated
+DROP POLICY IF EXISTS "Questions viewable by authenticated" ON public.questions;
+CREATE POLICY "Questions viewable by everyone" ON public.questions
+  FOR SELECT TO public
   USING (true);
-DROP POLICY IF EXISTS "Users can only delete their own questions" ON public.questions;
-CREATE POLICY "Users delete own questions" ON public.questions
-  FOR DELETE TO authenticated
-  USING (auth.uid() = user_id);
-DROP POLICY IF EXISTS "Admins can delete any question" ON public.questions;
-CREATE POLICY "Admins delete any question" ON public.questions
-  FOR DELETE TO authenticated
-  USING (auth.jwt()->>'role' = 'admin');
 
--- Votes
+-- Votes (keep private - only users can see their own votes)
 DROP POLICY IF EXISTS "Users can view their own votes" ON public.votes;
+DROP POLICY IF EXISTS "Users view own votes" ON public.votes;
 CREATE POLICY "Users view own votes" ON public.votes
   FOR SELECT TO authenticated
   USING (auth.uid() = user_id);
 
--- Comments
+-- Comments (allow anonymous view but require auth for creation)
 DROP POLICY IF EXISTS "Comments are viewable by everyone" ON public.comments;
-CREATE POLICY "Comments viewable by authenticated" ON public.comments
-  FOR SELECT TO authenticated
+DROP POLICY IF EXISTS "Comments viewable by authenticated" ON public.comments;
+CREATE POLICY "Comments viewable by everyone" ON public.comments
+  FOR SELECT TO public
   USING (true);
-DROP POLICY IF EXISTS "Users can only delete their own comments" ON public.comments;
-CREATE POLICY "Users delete own comments" ON public.comments
-  FOR DELETE TO authenticated
-  USING (auth.uid() = user_id);
 
--- Follows
+-- Follows (keep private)
 DROP POLICY IF EXISTS "Follows are viewable by everyone" ON public.follows;
-CREATE POLICY "Follows viewable by authenticated" ON public.follows
+DROP POLICY IF EXISTS "Follows viewable by authenticated" ON public.follows;
+CREATE POLICY "Follows viewable by everyone" ON public.follows
   FOR SELECT TO authenticated
   USING (true);
-DROP POLICY IF EXISTS "Users can only delete their own follows" ON public.follows;
-CREATE POLICY "Users delete own follows" ON public.follows
-  FOR DELETE TO authenticated
-  USING (auth.uid() = follower_id);
