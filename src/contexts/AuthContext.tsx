@@ -13,6 +13,8 @@ import {
 } from 'firebase/auth';
 import { auth, googleProvider } from '@/lib/firebase';
 
+const isDev = process.env.NODE_ENV === 'development';
+
 interface AuthContextValue {
   user: User | null;
   loading: boolean;
@@ -61,11 +63,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const text = await res.text();
         // Don't log rate limit errors as they're expected during auth state changes
         if (res.status !== 429) {
-          console.error('users/sync failed:', text);
+          if (isDev) console.error('users/sync failed:', text);
         }
       }
     } catch (error) {
-      console.error('Error creating user in database:', error);
+      if (isDev) console.error('Error creating user in database:', error);
     }
   };
 
@@ -108,7 +110,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
       } catch (error) {
         // Useful for debugging; don't throw to avoid breaking page load
-        console.error('Redirect sign-in failed:', error);
+        if (isDev) console.error('Redirect sign-in failed:', error);
       }
     })();
     return () => {

@@ -6,13 +6,16 @@ import type { Question, FollowResponse, QuestionResponse } from "@/types";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const isDev = process.env.NODE_ENV === 'development';
 
 // Debug logging
-console.log('Environment variables:', {
-  supabaseUrl: supabaseUrl ? 'SET' : 'NOT SET',
-  supabaseKey: supabaseKey ? 'SET' : 'NOT SET',
-  supabaseUrlValue: supabaseUrl
-});
+if (isDev) {
+  console.log('Environment variables:', {
+    supabaseUrl: supabaseUrl ? 'SET' : 'NOT SET',
+    supabaseKey: supabaseKey ? 'SET' : 'NOT SET',
+    supabaseUrlValue: supabaseUrl
+  });
+}
 
 type QuestionWithAuthorId = Question & { authorId: string };
 
@@ -49,7 +52,7 @@ export function useFeed(pageSize = 10) {
     
     try {
       const userId = generateUUID(user.uid);
-      console.log('Fetching follows for user ID:', userId);
+      if (isDev) console.log('Fetching follows for user ID:', userId);
       
       const res = await fetch(
         `${supabaseUrl}/rest/v1/follows?select=following_id&follower_id=eq.${userId}`,
@@ -58,12 +61,12 @@ export function useFeed(pageSize = 10) {
         }
       );
       
-      console.log('Follows response status:', res.status, res.statusText);
+      if (isDev) console.log('Follows response status:', res.status, res.statusText);
       
       if (!res.ok) {
         // If user doesn't exist in follows table yet, that's okay - just return empty array
         if (res.status === 400 || res.status === 401 || res.status === 404) {
-          console.log('User not found in follows table or no follows exist, continuing without follows');
+          if (isDev) console.log('User not found in follows table or no follows exist, continuing without follows');
           return [];
         }
         console.error('Failed to fetch followed IDs:', res.status, res.statusText);
@@ -71,7 +74,7 @@ export function useFeed(pageSize = 10) {
       }
       
       const data: FollowResponse[] = await res.json();
-      console.log('Follows data:', data);
+      if (isDev) console.log('Follows data:', data);
       return data.map((f: FollowResponse) => f.following_id);
     } catch (err) {
       console.error('Error fetching followed IDs:', err);
@@ -92,11 +95,13 @@ export function useFeed(pageSize = 10) {
       const to = from + pageSize - 1;
       
       // Debug logging
-      console.log('Making API call to:', `${supabaseUrl}/rest/v1/questions?select=id,question_text,yes_votes,no_votes,comments_count,created_at,author_id&order=created_at.desc`);
-      console.log('Headers:', {
-        apikey: supabaseKey ? 'SET' : 'NOT SET',
-        Authorization: supabaseKey ? 'SET' : 'NOT SET'
-      });
+      if (isDev) {
+        console.log('Making API call to:', `${supabaseUrl}/rest/v1/questions?select=id,question_text,yes_votes,no_votes,comments_count,created_at,author_id&order=created_at.desc`);
+        console.log('Headers:', {
+          apikey: supabaseKey ? 'SET' : 'NOT SET',
+          Authorization: supabaseKey ? 'SET' : 'NOT SET'
+        });
+      }
       
                    const res = await fetch(
                `${supabaseUrl}/rest/v1/questions?select=id,question_text,yes_votes,no_votes,comments_count,created_at,user_id&order=created_at.desc`,
@@ -109,16 +114,16 @@ export function useFeed(pageSize = 10) {
         }
       );
       
-      console.log('Response status:', res.status, res.statusText);
+      if (isDev) console.log('Response status:', res.status, res.statusText);
       
       if (!res.ok) {
         const errorText = await res.text();
-        console.error('Error response body:', errorText);
+        if (isDev) console.error('Error response body:', errorText);
         throw new Error(`Failed to fetch questions: ${res.status} ${res.statusText} - ${errorText}`);
       }
       
       const data: QuestionResponse[] = await res.json();
-      console.log('Questions data:', data);
+      if (isDev) console.log('Questions data:', data);
       
       // Fetch profiles separately for each question
                    const questionsWithProfiles = await Promise.all(

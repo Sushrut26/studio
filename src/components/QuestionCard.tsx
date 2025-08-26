@@ -12,6 +12,8 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
+const isDev = process.env.NODE_ENV === 'development';
+
 // Function to generate UUID from Firebase UID (same as in AuthContext)
 const generateUUID = (str: string) => {
   // Create a simple hash from the string
@@ -56,11 +58,13 @@ export default function QuestionCard({ question }: { question: Question }) {
       const userId = generateUUID(user.uid);
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
       const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-      
-      console.log('Voting with user ID:', userId);
-      console.log('User ID length:', userId.length);
-      console.log('Voting on question ID:', question.id);
-      console.log('Vote value:', vote === 'yes' ? 1 : -1);
+
+      if (isDev) {
+        console.log('Voting with user ID:', userId);
+        console.log('User ID length:', userId.length);
+        console.log('Voting on question ID:', question.id);
+        console.log('Vote value:', vote === 'yes' ? 1 : -1);
+      }
       
       if (!supabaseUrl || !supabaseKey) {
         throw new Error('Supabase configuration missing');
@@ -92,7 +96,7 @@ export default function QuestionCard({ question }: { question: Question }) {
         }
         // If ok and not 409, this was a fresh insert; continue to update counts below
       } catch (preErr) {
-        console.log('Pre-check vote lookup failed; continuing to insert.', preErr);
+        if (isDev) console.log('Pre-check vote lookup failed; continuing to insert.', preErr);
       }
       // After successful POST (fresh insert), fetch counts
       try {
@@ -116,25 +120,25 @@ export default function QuestionCard({ question }: { question: Question }) {
         },
       });
 
-      console.log('Question response status:', questionResponse.status, questionResponse.statusText);
+      if (isDev) console.log('Question response status:', questionResponse.status, questionResponse.statusText);
       
       if (!questionResponse.ok) {
         const errorText = await questionResponse.text();
-        console.error('Question update error response:', errorText);
+        if (isDev) console.error('Question update error response:', errorText);
         throw new Error(`Failed to update question: ${questionResponse.status} ${questionResponse.statusText} - ${errorText}`);
       }
 
       let questionData = null;
       try {
         questionData = await questionResponse.json();
-        console.log('Question update result:', questionData);
+        if (isDev) console.log('Question update result:', questionData);
 
         if (questionData && questionData[0]) {
           setYesVotes(questionData[0].yes_votes ?? 0);
           setNoVotes(questionData[0].no_votes ?? 0);
         }
       } catch (error) {
-        console.log('Question update successful (empty response)');
+        if (isDev) console.log('Question update successful (empty response)');
         // If we can't get the updated counts, just increment locally
         if (vote === 'yes') {
           setYesVotes(prev => prev + 1);
@@ -148,12 +152,14 @@ export default function QuestionCard({ question }: { question: Question }) {
         description: `Your ${vote} vote has been recorded.`,
       });
     } catch (error) {
-      console.error('Error voting:', error);
-      console.error('Error details:', {
-        message: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined,
-        error: error
-      });
+      if (isDev) {
+        console.error('Error voting:', error);
+        console.error('Error details:', {
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined,
+          error: error
+        });
+      }
       toast({
         title: "Vote failed",
         description: error instanceof Error ? error.message : "Failed to record your vote. Please try again.",
@@ -182,7 +188,7 @@ export default function QuestionCard({ question }: { question: Question }) {
               .single();
             
             if (error) {
-              console.error('Error fetching updated vote counts:', error);
+              if (isDev) console.error('Error fetching updated vote counts:', error);
               return;
             }
             
@@ -191,7 +197,7 @@ export default function QuestionCard({ question }: { question: Question }) {
               setNoVotes(data.no_votes ?? 0);
             }
           } catch (error) {
-            console.error('Error in real-time vote update:', error);
+            if (isDev) console.error('Error in real-time vote update:', error);
           }
         }
       )
