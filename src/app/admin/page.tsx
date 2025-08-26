@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
@@ -78,7 +78,7 @@ export default function AdminPage() {
     setDeletingIds(prev => new Set(prev).add(id));
 
     try {
-      const response = await fetch(`${supabaseUrl}/rest/v1/questions?id=eq.${id}`, {
+      const response = await fetch(`${supabaseUrl}/rest/v1/questions?id=eq.${encodeURIComponent(id)}`, {
         method: 'DELETE',
         headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
       });

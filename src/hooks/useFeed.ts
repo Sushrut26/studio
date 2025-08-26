@@ -52,7 +52,7 @@ export function useFeed(pageSize = 10) {
       console.log('Fetching follows for user ID:', userId);
       
       const res = await fetch(
-        `${supabaseUrl}/rest/v1/follows?select=following_id&follower_id=eq.${userId}`,
+        `${supabaseUrl}/rest/v1/follows?select=following_id&follower_id=eq.${encodeURIComponent(userId)}`,
         {
           headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
         }
@@ -125,7 +125,7 @@ export function useFeed(pageSize = 10) {
                data.map(async (q: QuestionResponse) => {
                  try {
                    const profileRes = await fetch(
-                     `${supabaseUrl}/rest/v1/profiles?id=eq.${q.user_id}`,
+                     `${supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(q.user_id)}`,
               {
                 headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
               }
