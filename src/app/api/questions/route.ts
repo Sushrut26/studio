@@ -47,7 +47,15 @@ export async function POST(req: NextRequest) {
       .select('id')
       .single();
 
-    if (error) return NextResponse.json({ message: 'Create failed', details: error.message }, { status: 400 });
+    if (error) {
+      console.error('Supabase error creating question:', error);
+      return NextResponse.json({
+        message: 'Create failed',
+        details: error.message,
+        code: error.code,
+        hint: error.hint
+      }, { status: 400 });
+    }
     return NextResponse.json({ id: data.id }, { status: 201 });
   } catch (err: any) {
     if (err.message === 'Rate limit exceeded') {

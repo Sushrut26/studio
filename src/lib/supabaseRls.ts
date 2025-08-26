@@ -6,8 +6,14 @@ export function getSupabaseForUser(userId: string, role: 'authenticated' | 'admi
   const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   const SUPABASE_JWT_SECRET = process.env.SUPABASE_JWT_SECRET;
 
-  if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !SUPABASE_JWT_SECRET) {
-    throw new Error('Missing Supabase env vars. Set NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY and SUPABASE_JWT_SECRET');
+  if (!SUPABASE_URL) {
+    throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL environment variable. Please set it in your .env.local file.');
+  }
+  if (!SUPABASE_ANON_KEY) {
+    throw new Error('Missing NEXT_PUBLIC_SUPABASE_ANON_KEY environment variable. Please set it in your .env.local file.');
+  }
+  if (!SUPABASE_JWT_SECRET) {
+    throw new Error('Missing SUPABASE_JWT_SECRET environment variable. Please set it in your .env.local file. This should match your Supabase project\'s JWT secret.');
   }
 
   const token = jwt.sign(
