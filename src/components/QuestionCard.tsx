@@ -11,26 +11,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-
-// Function to generate UUID from Firebase UID (same as in AuthContext)
-const generateUUID = (str: string) => {
-  // Create a simple hash from the string
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32-bit integer
-  }
-  
-  // Convert to a proper UUID format (36 characters: 8-4-4-4-12)
-  const hashStr = Math.abs(hash).toString(16).padStart(8, '0');
-  const uuid = `${hashStr.slice(0, 8)}-${hashStr.slice(0, 4)}-${hashStr.slice(0, 4)}-${hashStr.slice(0, 4)}-${hashStr.slice(0, 12)}`;
-  
-  // Ensure it's exactly 36 characters by padding if needed
-  const paddedUuid = uuid.padEnd(36, '0');
-  
-  return paddedUuid;
-};
+import { firebaseUidToUuid } from "@/lib/id";
 
 export default function QuestionCard({ question }: { question: Question }) {
   const { user } = useAuth();
@@ -53,7 +34,7 @@ export default function QuestionCard({ question }: { question: Question }) {
     setUserVote(vote);
 
     try {
-      const userId = generateUUID(user.uid);
+      const userId = firebaseUidToUuid(user.uid);
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
       const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
       
