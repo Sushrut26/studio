@@ -3,7 +3,9 @@
 import { useState, useCallback, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Question, FollowResponse, QuestionResponse } from "@/types";
-import { firebaseUidToUuid } from "@/lib/id";
+
+import { safeQueryParam } from "@/lib/utils";
+
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -33,7 +35,9 @@ export function useFeed(pageSize = 10) {
       console.log('Fetching follows for user ID:', userId);
       
       const res = await fetch(
-        `${supabaseUrl}/rest/v1/follows?select=following_id&follower_id=eq.${encodeURIComponent(userId)}`,
+
+        `${supabaseUrl}/rest/v1/follows?select=following_id&follower_id=eq.${safeQueryParam(userId)}`,
+
         {
           headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
         }
@@ -106,7 +110,9 @@ export function useFeed(pageSize = 10) {
                data.map(async (q: QuestionResponse) => {
                  try {
                    const profileRes = await fetch(
-                     `${supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(q.user_id)}`,
+
+                     `${supabaseUrl}/rest/v1/profiles?id=eq.${safeQueryParam(q.user_id)}`,
+
               {
                 headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
               }

@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { safeQueryParam } from '@/lib/utils';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -78,7 +79,9 @@ export default function AdminPage() {
     setDeletingIds(prev => new Set(prev).add(id));
 
     try {
+
       const response = await fetch(`${supabaseUrl}/rest/v1/questions?id=eq.${encodeURIComponent(id)}`, {
+
         method: 'DELETE',
         headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
       });

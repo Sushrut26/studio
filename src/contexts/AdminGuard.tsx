@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from './AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { safeQueryParam } from '@/lib/utils';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -17,7 +18,7 @@ export default function AdminGuard({ children }: { children: React.ReactNode }) 
 
   useEffect(() => {
     if (!loading && user && supabaseUrl && supabaseKey) {
-      fetch(`${supabaseUrl}/rest/v1/users?id=eq.${user.uid}&select=role`, {
+      fetch(`${supabaseUrl}/rest/v1/users?id=eq.${safeQueryParam(user.uid)}&select=role`, {
         headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
       })
         .then((res) => {
