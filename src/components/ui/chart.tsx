@@ -18,6 +18,23 @@ export type ChartConfig = {
   )
 }
 
+// Sanitize a CSS variable name to prevent CSS injection.
+function sanitizeVarName(name: string): string | null {
+  const sanitized = name.replace(/[^a-zA-Z0-9_-]/g, "")
+  return sanitized ? sanitized : null
+}
+
+// Only allow safe characters in CSS values. If a value contains anything
+// suspicious, drop it entirely so that untrusted input can't break out of the
+// style block.
+function sanitizeCssValue(value: string | undefined): string | null {
+  if (typeof value !== "string") {
+    return null
+  }
+
+  return /^[#a-zA-Z0-9\s(),.%+-]+$/.test(value) ? value : null
+}
+
 type ChartContextProps = {
   config: ChartConfig
 }
@@ -80,20 +97,23 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
     <style
       dangerouslySetInnerHTML={{
         __html: Object.entries(THEMES)
-          .map(
-            ([theme, prefix]) => `
-${prefix} [data-chart=${id}] {
-${colorConfig
-  .map(([key, itemConfig]) => {
-    const color =
-      itemConfig.theme?.[theme as keyof typeof itemConfig.theme] ||
-      itemConfig.color
-    return color ? `  --color-${key}: ${color};` : null
-  })
-  .join("\n")}
-}
-`
-          )
+          .map(([theme, prefix]) => {
+            const body = colorConfig
+              .map(([key, itemConfig]) => {
+                const colorRaw =
+                  itemConfig.theme?.[
+                    theme as keyof typeof itemConfig.theme
+                  ] || itemConfig.color
+                const color = sanitizeCssValue(colorRaw)
+                const safeKey = sanitizeVarName(key)
+                return color && safeKey
+                  ? `  --color-${safeKey}: ${color};`
+                  : null
+              })
+              .filter((value): value is string => Boolean(value))
+              .join("\n")
+            return `${prefix} [data-chart=${id}] {\n${body}\n}`
+          })
           .join("\n"),
       }}
     />
