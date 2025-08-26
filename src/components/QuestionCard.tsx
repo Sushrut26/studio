@@ -47,76 +47,38 @@ export default function QuestionCard({ question }: { question: Question }) {
         throw new Error('Supabase configuration missing');
       }
 
-      // Check if user already voted for this question (via secure API)
-      try {
-        const idToken = await user.getIdToken();
-        const existingRes = await fetch(`/api/votes`, {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${idToken}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ question_id: question.id, value: vote === 'yes' ? 1 : -1 }),
-        });
-        if (existingRes.status === 409) {
-          const dup = await existingRes.json();
-          setInteractionState('voted');
-          setUserVote(dup?.value === 1 ? 'yes' : 'no');
-          if (dup?.counts) {
-            setYesVotes(dup.counts.yes_votes ?? 0);
-            setNoVotes(dup.counts.no_votes ?? 0);
-          }
-          toast({ title: 'Already voted', description: 'You have already voted on this poll.' });
-          setIsVoting(false);
-          return;
-        }
-        if (!existingRes.ok) {
-          const txt = await existingRes.text();
-          throw new Error(`Vote API failed: ${existingRes.status} ${existingRes.statusText} - ${txt}`);
-        }
-        // If ok and not 409, this was a fresh insert; continue to update counts below
-      } catch (preErr) {
-        console.log('Pre-check vote lookup failed; continuing to insert.', preErr);
-      }
-      // After successful POST (fresh insert), fetch counts
-      try {
-        const countsRes = await fetch(`${supabaseUrl}/rest/v1/questions?id=eq.${encodeURIComponent(question.id)}&select=yes_votes,no_votes`, {
-          headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
-        });
-        if (countsRes.ok) {
-          const counts = await countsRes.json();
-          if (counts && counts[0]) {
-            setYesVotes(counts[0].yes_votes ?? 0);
-            setNoVotes(counts[0].no_votes ?? 0);
-          }
-        }
-      } catch (ignored) {}
-
-      // Update question vote counts
-      const questionResponse = await fetch(`${supabaseUrl}/rest/v1/questions?id=eq.${encodeURIComponent(question.id)}&select=yes_votes,no_votes`, {
-        headers: {
-          apikey: supabaseKey,
-          Authorization: `Bearer ${supabaseKey}`,
-        },
+      // Vote via secure API; backend returns updated counts
+      const idToken = await user.getIdToken();
+      const voteRes = await fetch(`/api/votes`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${idToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question_id: question.id, value: vote === 'yes' ? 1 : -1 }),
       });
 
-      console.log('Question response status:', questionResponse.status, questionResponse.statusText);
-      
-      if (!questionResponse.ok) {
-        const errorText = await questionResponse.text();
-        console.error('Question update error response:', errorText);
-        throw new Error(`Failed to update question: ${questionResponse.status} ${questionResponse.statusText} - ${errorText}`);
+      if (voteRes.status === 409) {
+        const dup = await voteRes.json();
+        setInteractionState('voted');
+        setUserVote(dup?.value === 1 ? 'yes' : 'no');
+        if (dup?.counts) {
+          setYesVotes(dup.counts.yes_votes ?? 0);
+          setNoVotes(dup.counts.no_votes ?? 0);
+        }
+        toast({ title: 'Already voted', description: 'You have already voted on this poll.' });
+        setIsVoting(false);
+        return;
       }
 
-      let questionData = null;
-      try {
-        questionData = await questionResponse.json();
-        console.log('Question update result:', questionData);
+      if (!voteRes.ok) {
+        const txt = await voteRes.text();
+        throw new Error(`Vote API failed: ${voteRes.status} ${voteRes.statusText} - ${txt}`);
+      }
 
-        if (questionData && questionData[0]) {
-          setYesVotes(questionData[0].yes_votes ?? 0);
-          setNoVotes(questionData[0].no_votes ?? 0);
-        }
-      } catch (error) {
-        console.log('Question update successful (empty response)');
-        // If we can't get the updated counts, just increment locally
+      const json = await voteRes.json().catch(() => ({} as any));
+      if (json?.counts) {
+        setYesVotes(json.counts.yes_votes ?? 0);
+        setNoVotes(json.counts.no_votes ?? 0);
+      } else {
+        // Fallback: optimistic local increment
         if (vote === 'yes') {
           setYesVotes(prev => prev + 1);
         } else {
