@@ -12,6 +12,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
+
 const isDev = process.env.NODE_ENV === 'development';
 
 // Function to generate UUID from Firebase UID (same as in AuthContext)
@@ -34,6 +35,9 @@ const generateUUID = (str: string) => {
   return paddedUuid;
 };
 
+import { firebaseUidToUuid } from "@/lib/id";
+
+
 export default function QuestionCard({ question }: { question: Question }) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -55,7 +59,7 @@ export default function QuestionCard({ question }: { question: Question }) {
     setUserVote(vote);
 
     try {
-      const userId = generateUUID(user.uid);
+      const userId = firebaseUidToUuid(user.uid);
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
       const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -100,7 +104,7 @@ export default function QuestionCard({ question }: { question: Question }) {
       }
       // After successful POST (fresh insert), fetch counts
       try {
-        const countsRes = await fetch(`${supabaseUrl}/rest/v1/questions?id=eq.${question.id}&select=yes_votes,no_votes`, {
+        const countsRes = await fetch(`${supabaseUrl}/rest/v1/questions?id=eq.${encodeURIComponent(question.id)}&select=yes_votes,no_votes`, {
           headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
         });
         if (countsRes.ok) {
@@ -113,7 +117,7 @@ export default function QuestionCard({ question }: { question: Question }) {
       } catch (ignored) {}
 
       // Update question vote counts
-      const questionResponse = await fetch(`${supabaseUrl}/rest/v1/questions?id=eq.${question.id}&select=yes_votes,no_votes`, {
+      const questionResponse = await fetch(`${supabaseUrl}/rest/v1/questions?id=eq.${encodeURIComponent(question.id)}&select=yes_votes,no_votes`, {
         headers: {
           apikey: supabaseKey,
           Authorization: `Bearer ${supabaseKey}`,
