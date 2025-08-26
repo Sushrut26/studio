@@ -19,7 +19,12 @@ export async function POST(req: NextRequest) {
     const [, token] = authHeader.split(' ');
     if (!token) return NextResponse.json({ message: 'Missing Authorization Bearer token' }, { status: 401 });
 
-    const decoded = await verifyFirebaseIdToken(token);
+    let decoded;
+    try {
+      decoded = await verifyFirebaseIdToken(token);
+    } catch {
+      return NextResponse.json({ message: 'Invalid token' }, { status: 403 });
+    }
     const userId = firebaseUidToUuid(decoded.uid);
     const supabase = getSupabaseForUser(userId);
 
