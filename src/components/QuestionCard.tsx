@@ -7,7 +7,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress";
 import { MessageCircle } from "lucide-react";
 import type { Question } from "@/types";
-import { cn } from "@/lib/utils";
+import { cn, safeQueryParam } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -96,7 +96,7 @@ export default function QuestionCard({ question }: { question: Question }) {
       }
       // After successful POST (fresh insert), fetch counts
       try {
-        const countsRes = await fetch(`${supabaseUrl}/rest/v1/questions?id=eq.${question.id}&select=yes_votes,no_votes`, {
+        const countsRes = await fetch(`${supabaseUrl}/rest/v1/questions?id=eq.${safeQueryParam(question.id)}&select=yes_votes,no_votes`, {
           headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
         });
         if (countsRes.ok) {
@@ -109,7 +109,7 @@ export default function QuestionCard({ question }: { question: Question }) {
       } catch (ignored) {}
 
       // Update question vote counts
-      const questionResponse = await fetch(`${supabaseUrl}/rest/v1/questions?id=eq.${question.id}&select=yes_votes,no_votes`, {
+      const questionResponse = await fetch(`${supabaseUrl}/rest/v1/questions?id=eq.${safeQueryParam(question.id)}&select=yes_votes,no_votes`, {
         headers: {
           apikey: supabaseKey,
           Authorization: `Bearer ${supabaseKey}`,
