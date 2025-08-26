@@ -59,7 +59,7 @@ export default function AiQuestionSuggester({ questions }: { questions: Question
           Need Inspiration?
         </CardTitle>
         <CardDescription>
-          Enter some interests and we'll suggest new poll questions for you.
+          Enter some interests and we&apos;ll suggest new poll questions for you.
         </CardDescription>
       </CardHeader>
       <CardContent>

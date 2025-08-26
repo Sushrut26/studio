@@ -17,7 +17,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
 
-  const fetchQuestions = async () => {
+  const fetchQuestions = useCallback(async () => {
     if (!supabaseUrl || !supabaseKey) {
       toast({
         title: "Configuration error",
@@ -59,11 +59,11 @@ export default function AdminPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
     fetchQuestions();
-  }, []);
+  }, [fetchQuestions]);
 
   const deleteQuestion = async (id: string) => {
     if (!supabaseUrl || !supabaseKey) {

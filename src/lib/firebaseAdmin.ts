@@ -1,6 +1,7 @@
-import * as admin from 'firebase-admin';
+import { getApps, initializeApp, cert, App } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
 
-let app: admin.app.App | undefined;
+let app: App | undefined;
 
 export async function verifyFirebaseIdToken(idToken: string) {
   if (!app) {
@@ -12,16 +13,12 @@ export async function verifyFirebaseIdToken(idToken: string) {
       throw new Error('Missing Firebase Admin env vars. Set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY');
     }
 
-    app = admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId,
-        clientEmail,
-        privateKey,
-      }),
+    app = getApps()[0] || initializeApp({
+      credential: cert({ projectId, clientEmail, privateKey }),
     });
   }
 
-  return app.auth().verifyIdToken(idToken);
+  return getAuth(app).verifyIdToken(idToken);
 }
 
 

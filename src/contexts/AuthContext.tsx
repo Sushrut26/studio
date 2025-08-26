@@ -27,36 +27,47 @@ const AuthContext = createContext<AuthContextValue>({
   logout: async () => {},
 });
 
-// Function to create user in our database via secure API
-const createUserInDatabase = async (firebaseUser: User) => {
-  try {
-    const idToken = await firebaseUser.getIdToken();
-    const res = await fetch('/api/users/sync', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${idToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        name: firebaseUser.displayName || undefined,
-        avatar_url: firebaseUser.photoURL || undefined,
-        email: firebaseUser.email || undefined,
-      }),
-    });
-    if (!res.ok) {
-      const text = await res.text();
-      console.error('users/sync failed:', text);
-    }
-  } catch (error) {
-    console.error('Error creating user in database:', error);
-  }
-};
-
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [lastSyncTime, setLastSyncTime] = useState<number>(0);
   const router = useRouter();
   const pathname = usePathname();
+
+  // Function to create user in our database via secure API
+  const createUserInDatabase = async (firebaseUser: User) => {
+    const now = Date.now();
+    // Debounce: only sync if 5 seconds have passed since last sync
+    if (now - lastSyncTime < 5000) {
+      return;
+    }
+    
+    try {
+      setLastSyncTime(now);
+      const idToken = await firebaseUser.getIdToken();
+      const res = await fetch('/api/users/sync', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${idToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: firebaseUser.displayName || undefined,
+          avatar_url: firebaseUser.photoURL || undefined,
+          email: firebaseUser.email || undefined,
+        }),
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        // Don't log rate limit errors as they're expected during auth state changes
+        if (res.status !== 429) {
+          console.error('users/sync failed:', text);
+        }
+      }
+    } catch (error) {
+      console.error('Error creating user in database:', error);
+    }
+  };
 
   // Keep auth state in sync
   useEffect(() => {
