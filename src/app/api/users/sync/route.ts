@@ -7,7 +7,6 @@ import rateLimit from '@/lib/rate-limiter';
 
 const limiter = rateLimit({
   interval: 60 * 1000, // 60 seconds
-  uniqueTokenPerInterval: 500, // 500 users per interval
 });
 
 const bodySchema = z.object({
