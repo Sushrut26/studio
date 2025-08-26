@@ -71,8 +71,12 @@ export default function AdminPage() {
     setDeletingIds(prev => new Set(prev).add(id));
 
     try {
+
       const token = await user.getIdToken();
-      const response = await fetch(`/api/admin/questions/${id}`, {
+    
+
+      const response = await fetch(`${supabaseUrl}/rest/v1/questions?id=eq.${encodeURIComponent(id)}`, {
+
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
