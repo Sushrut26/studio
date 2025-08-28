@@ -55,7 +55,7 @@
     NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_firebase_messaging_sender_id
     NEXT_PUBLIC_FIREBASE_APP_ID=your_firebase_app_id
     ```
-5.  Remove SUPABASE_SERVICE_ROLE_KEY if previously set; we now rely on RLS.
+
 
 6.  Run the development server:
     ```bash
