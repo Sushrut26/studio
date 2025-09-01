@@ -5,13 +5,14 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, ChevronDown, ChevronUp } from "lucide-react";
 import type { Question } from "@/types";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { firebaseUidToUuid } from "@/lib/id";
+import Comments from "./Comments";
 
 export default function QuestionCard({ question }: { question: Question }) {
   const { user } = useAuth();
@@ -21,6 +22,8 @@ export default function QuestionCard({ question }: { question: Question }) {
   const [yesVotes, setYesVotes] = useState(question.initialYesVotes);
   const [noVotes, setNoVotes] = useState(question.initialNoVotes);
   const [isVoting, setIsVoting] = useState(false);
+  const [showComments, setShowComments] = useState(false);
+  const [commentCount, setCommentCount] = useState(question.commentsCount);
 
   const totalVotes = yesVotes + noVotes;
   const yesPercentage = totalVotes > 0 ? Math.round((yesVotes / totalVotes) * 100) : 0;
@@ -217,10 +220,35 @@ export default function QuestionCard({ question }: { question: Question }) {
           )}
         </div>
         <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
-          <MessageCircle className="h-4 w-4" />
-          <span>{question.commentsCount} comments</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowComments(!showComments)}
+            className="flex items-center gap-2 p-0 h-auto"
+          >
+            <MessageCircle className="h-4 w-4" />
+            <span>{commentCount} comments</span>
+            {showComments ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </Button>
         </div>
       </CardFooter>
+      
+      {/* Comments Section */}
+      {showComments && (
+        <CardContent className="pt-0 border-t">
+          <Comments 
+            questionId={question.id} 
+            onCommentAdded={() => {
+              // Update the comment count locally when a comment is added
+              setCommentCount(prev => prev + 1);
+            }}
+            onCommentDeleted={() => {
+              // Update the comment count locally when a comment is deleted
+              setCommentCount(prev => Math.max(0, prev - 1));
+            }}
+          />
+        </CardContent>
+      )}
     </Card>
   );
 }

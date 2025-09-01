@@ -119,7 +119,13 @@ export default function NewPollPage() {
                     onChange={(e) => setQuestion(e.target.value)}
                     disabled={isSubmitting}
                     required
+                    maxLength={3000}
+                    rows={4}
                   />
+                  <div className="flex justify-between items-center text-xs text-muted-foreground">
+                    <span>Share your thoughts and start a conversation</span>
+                    <span>{question.length}/3000</span>
+                  </div>
                 </div>
               </div>
             </CardContent>

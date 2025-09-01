@@ -21,7 +21,7 @@ export default function Header() {
     <header className="sticky top-0 z-50 w-full border-b bg-card/80 backdrop-blur">
       <div className="container mx-auto flex h-16 max-w-2xl items-center justify-between px-4">
         <Link href="/">
-          <h1 className="text-2xl font-bold text-primary font-headline">PollPulse</h1>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">PollPULSE</h1>
         </Link>
         <div className="flex items-center gap-4">
           <Button asChild>

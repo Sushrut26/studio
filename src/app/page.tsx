@@ -35,8 +35,15 @@ export default function Home() {
     <div className="flex min-h-screen flex-col">
       <Header />
       <main className="container mx-auto max-w-2xl flex-1 px-4 py-8">
+        <div className="mb-8 text-center">
+          <h2 className="text-3xl font-bold text-gray-900 mb-3">Discover What People Think</h2>
+          <p className="text-gray-600 max-w-lg mx-auto">
+            Explore polls on trending topics, share your opinion, and see how others vote. 
+            Join the conversation and make your voice heard.
+          </p>
+        </div>
         <div className="space-y-6">
-          <h2 className="text-xl font-semibold tracking-tight">Recent Polls</h2>
+          <h3 className="text-xl font-semibold tracking-tight text-gray-800">Recent Polls</h3>
           
           {error && (
             <Alert variant="destructive">

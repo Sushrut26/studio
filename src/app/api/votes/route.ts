@@ -12,7 +12,7 @@ export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {
   try {
-    const ip = req.ip ?? '127.0.0.1';
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? '127.0.0.1';
     await limiter.check(20, ip); // 20 requests per minute per IP
 
     const authHeader = req.headers.get('authorization') || '';
