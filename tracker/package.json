@@ -8,7 +8,13 @@
     "start": "next start --port 3100",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "test": "jest"
+    "test": "jest",
+    "setup": "npm run db:up && npm run db:seed",
+    "db:up": "node scripts/db-up.mjs",
+    "db:down": "docker compose down",
+    "db:reset": "docker compose down -v && npm run setup",
+    "db:seed": "tsx --env-file-if-exists=.env.local scripts/seed.ts",
+    "db:sql": "tsx scripts/gen-sql.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^0.10.4",
@@ -46,6 +52,7 @@
     "jest-environment-jsdom": "^30.0.5",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
+    "tsx": "^4.23.12",
     "typescript": "^5"
   }
 }

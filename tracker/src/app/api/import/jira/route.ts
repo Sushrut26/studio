@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { fail, ok } from '@/lib/api';
+import { fail, ok, ready } from '@/lib/api';
 import { importJiraBatchSchema } from '@/lib/schemas';
 import {
   getCatalogRegistry,
@@ -21,6 +21,7 @@ export const maxDuration = 60;
  */
 export async function POST(req: NextRequest) {
   try {
+    await ready();
     const { batch, importId, dryRun } = importJiraBatchSchema.parse(await req.json());
     const registry = await getCatalogRegistry();
 

@@ -1,5 +1,6 @@
 import { neon } from '@neondatabase/serverless';
 import { Pool } from 'pg';
+import { SCHEMA_PROBE, SCHEMA_STATEMENTS } from './schema';
 
 /**
  * A tagged-template query function. Both backends below implement this same
@@ -57,6 +58,55 @@ export function getSql(): SqlTag {
   return cached;
 }
 
+/**
+ * Wrap a complete SQL string as a no-substitution template literal.
+ *
+ * Both drivers are tagged-template-only (Neon's HTTP client exposes no
+ * `.query()`), so a statement built elsewhere has to be handed over in this
+ * shape. Only ever call this with SQL we author -- never with user input, which
+ * belongs in an interpolated value where it gets parameterized.
+ */
+function asTemplate(statement: string): TemplateStringsArray {
+  const parts = [statement] as unknown as { raw: string[] } & string[];
+  parts.raw = [statement];
+  return parts as unknown as TemplateStringsArray;
+}
+
+let schemaReady: Promise<void> | null = null;
+
+/**
+ * Create the schema if it is missing, once per process.
+ *
+ * This is why pasting a DATABASE_URL is all the setup there is -- no psql step,
+ * locally or on a fresh deploy. It probes for one table first, so a warm
+ * process pays a single cheap query rather than replaying every DDL statement.
+ * All statements are IF NOT EXISTS and none drops or alters anything, so
+ * pointing this at an existing database cannot damage it.
+ */
+export function ensureSchema(): Promise<void> {
+  schemaReady ??= (async () => {
+    const sql = getSql();
+    const probe = await sql<{ present: string | null }>(asTemplate(SCHEMA_PROBE)).catch(() => null);
+    if (probe?.[0]?.present) return;
+
+    for (const statement of SCHEMA_STATEMENTS) {
+      await sql(asTemplate(statement));
+    }
+  })().catch((error) => {
+    // Don't cache a failure: a transient outage should not poison the process.
+    schemaReady = null;
+    throw error;
+  });
+
+  return schemaReady;
+}
+
+/** Run `fn` with the schema guaranteed to exist. Entry point for routes and pages. */
+export async function withDb<T>(fn: (sql: SqlTag) => Promise<T>): Promise<T> {
+  await ensureSchema();
+  return fn(getSql());
+}
+
 export function isDatabaseConfigured(): boolean {
   return Boolean(process.env.DATABASE_URL);
 }
@@ -66,4 +116,5 @@ export async function closePool(): Promise<void> {
   await pool?.end();
   pool = null;
   cached = null;
+  schemaReady = null;
 }

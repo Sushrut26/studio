@@ -1,6 +1,9 @@
--- Catalog Key Tracker schema.
--- Apply with:  psql "$DATABASE_URL" -f db/001_init.sql
--- Idempotent: safe to re-run.
+-- GENERATED FILE -- do not edit.
+-- Source of truth: src/lib/schema.ts. Regenerate with: npm run db:sql
+--
+-- You do not normally need this file: the app applies its own schema on first
+-- use. It exists for applying the schema manually instead:
+--   psql "$DATABASE_URL" -f db/001_init.sql
 
 create table if not exists imports (
   id           bigserial primary key,
@@ -71,13 +74,20 @@ create table if not exists list_items (
   unique (list_id, key_id)
 );
 
-create index if not exists idx_occ_key    on ticket_key_occurrences (key_id);
+create index if not exists idx_occ_key on ticket_key_occurrences (key_id);
+
 create index if not exists idx_occ_ticket on ticket_key_occurrences (ticket_id);
-create index if not exists idx_li_key     on list_items (key_id);
-create index if not exists idx_li_list    on list_items (list_id);
+
+create index if not exists idx_li_key on list_items (key_id);
+
+create index if not exists idx_li_list on list_items (list_id);
+
 create index if not exists idx_keys_parent on keys (parent_key_id);
-create index if not exists idx_keys_type   on keys (key_type);
+
+create index if not exists idx_keys_type on keys (key_type);
+
 create index if not exists idx_keys_country on keys (country);
--- text_pattern_ops enables index use for prefix search: key_text like 'x%'
+
 create index if not exists idx_keys_prefix on keys (key_text text_pattern_ops);
+
 create index if not exists idx_tickets_created on tickets (jira_created_at desc nulls last);

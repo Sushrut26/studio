@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { KeyLink, KeyTypeBadge } from '@/components/KeyBadge';
 import { SetupNotice } from '@/components/SetupNotice';
-import { isDatabaseConfigured } from '@/lib/db';
+import { ensureSchema, isDatabaseConfigured } from '@/lib/db';
 import { getListDetail } from '@/lib/queries';
 import { formatDate, pluralize } from '@/lib/utils';
 
@@ -13,6 +13,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function ListDetailPage({ params }: { params: Promise<{ id: string }> }) {
   if (!isDatabaseConfigured()) return <SetupNotice />;
+  await ensureSchema();
 
   const { id } = await params;
   const detail = await getListDetail(Number(id));

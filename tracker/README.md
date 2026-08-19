@@ -31,14 +31,39 @@ groups already imported beneath it.
 The format lives in exactly one file: `src/lib/keys/pattern.ts`. Adding a country code or widening
 the pattern is a one-line change there.
 
-## Setup
+## Quick start
 
 ```bash
+cd tracker
 npm install
-cp .env.example .env.local     # add your DATABASE_URL
-psql "$DATABASE_URL" -f db/001_init.sql
-npm run dev                    # http://localhost:3100
+npm run setup     # starts Postgres in Docker, creates the schema, loads sample data
+npm run dev       # http://localhost:3100
 ```
+
+Then look up `144488-USA_FBRB_5340` on the dashboard. The sample data includes two overlapping
+lists, so `/repeats` has something real in it immediately.
+
+**No Docker?** Skip it. Create a free Postgres at [neon.tech](https://neon.tech), put the
+connection string in `.env.local` as `DATABASE_URL=...`, then run `npm run db:seed`. `npm run setup`
+detects a missing or stopped Docker daemon and tells you this rather than failing obscurely.
+
+**There is no schema step.** The app creates its own tables on first use, locally and in production
+alike, so a `DATABASE_URL` is the whole of the configuration. Every statement is
+`CREATE TABLE IF NOT EXISTS`; nothing is ever dropped or altered, so pointing it at an existing
+database is safe.
+
+### Scripts
+
+| Command | Does |
+|---|---|
+| `npm run setup` | `db:up` then `db:seed` — the whole local stack |
+| `npm run db:up` | Start the Postgres container, write `.env.local` if missing |
+| `npm run db:seed` | Import `samples/sample-jira-export.csv` and create two overlapping lists |
+| `npm run db:reset` | Destroy the container **and its data**, then set up again |
+| `npm run db:down` | Stop the container, keeping data |
+| `npm run db:sql` | Regenerate `db/001_init.sql` from `src/lib/schema.ts` |
+
+Seeding is idempotent — run it as often as you like.
 
 ### Database
 
@@ -65,7 +90,10 @@ At the target scale (~10k tickets, ~500 lists) the free Neon tier is far more th
 2. **Set Root Directory to `tracker`** — this is the one setting that matters, since the repo root
    holds an unrelated project.
 3. Add `DATABASE_URL`.
-4. Run `db/001_init.sql` against your database once.
+
+That is all. There is no schema step — the app builds its own tables on the first request. Until a
+`DATABASE_URL` is set the app renders a setup notice rather than erroring, so a deploy without one
+is a working deploy waiting on its database, not a broken one.
 
 ### A note on access
 
@@ -102,7 +130,7 @@ questions — 40 tickets in 1 list is a different problem from 1 ticket across 8
 ## Development
 
 ```bash
-npm test          # 98 unit tests, no database needed
+npm test          # 105 unit tests, no database needed
 npm run typecheck
 npm run lint
 npm run build
@@ -111,12 +139,15 @@ npm run build
 Run the integration suite against a real Postgres:
 
 ```bash
-TEST_DATABASE_URL=postgres://user@host/db npm test   # +15 end-to-end tests
+TEST_DATABASE_URL=postgres://user@host/db npm test   # +17 end-to-end tests, 122 total
 ```
 
 It covers import idempotency, catalog adoption, hierarchy traversal in both directions, list
-overlap, the repeats roll-up, and stale-occurrence cleanup. Without `TEST_DATABASE_URL` those tests
-skip, so `npm test` stays green anywhere.
+overlap, the repeats roll-up, distinct-vs-row counting, and stale-occurrence cleanup. Without
+`TEST_DATABASE_URL` those tests skip, so `npm test` stays green anywhere.
+
+**These tests `TRUNCATE` every table.** Point them at a scratch database, never one holding real
+data.
 
 `src/lib/keys/pattern.test.ts` uses real catalog and app group keys as fixtures — if the key format
 ever changes, that file is where it will fail first.

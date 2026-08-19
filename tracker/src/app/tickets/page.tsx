@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { SetupNotice } from '@/components/SetupNotice';
-import { isDatabaseConfigured } from '@/lib/db';
+import { ensureSchema, isDatabaseConfigured } from '@/lib/db';
 import { searchTickets } from '@/lib/queries';
 import { formatDate } from '@/lib/utils';
 
@@ -15,6 +15,7 @@ export default async function TicketsPage({
   searchParams: Promise<{ q?: string }>;
 }) {
   if (!isDatabaseConfigured()) return <SetupNotice />;
+  await ensureSchema();
 
   const { q = '' } = await searchParams;
   const tickets = await searchTickets(q);

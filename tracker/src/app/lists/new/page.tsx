@@ -1,11 +1,12 @@
 import { NewListClient } from '@/components/NewListClient';
 import { SetupNotice } from '@/components/SetupNotice';
-import { isDatabaseConfigured } from '@/lib/db';
+import { ensureSchema, isDatabaseConfigured } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
-export default function NewListPage() {
+export default async function NewListPage() {
   if (!isDatabaseConfigured()) return <SetupNotice />;
+  await ensureSchema();
 
   return (
     <div className="space-y-6">

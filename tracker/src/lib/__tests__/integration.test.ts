@@ -157,6 +157,26 @@ describeDb('end-to-end against Postgres', () => {
     expect(byTicket['AZSUP-3']).toBeUndefined();
   });
 
+  it('returns one row per matching key, which callers must collapse per ticket', async () => {
+    // AZSUP-1 names two different app groups of the same catalog, so a catalog
+    // search yields two rows for that one ticket. The key page groups these;
+    // counting raw rows would overstate "in tickets" -- which it once did.
+    const tickets = await ticketsForKey(CATALOG);
+    const forAzsup1 = tickets.filter((t) => t.ticket_key === 'AZSUP-1');
+    expect(forAzsup1.length).toBe(2);
+    expect(new Set(forAzsup1.map((t) => t.matched_key)).size).toBe(2);
+
+    const distinct = new Set(tickets.map((t) => t.ticket_key));
+    expect(distinct.size).toBeLessThan(tickets.length);
+  });
+
+  it('bulk lookup counts distinct tickets, not match rows', async () => {
+    // The same situation via the other code path: this one must already be
+    // distinct, because nothing downstream collapses it.
+    const [result] = await bulkLookup([CATALOG]);
+    expect(result.ticketCount).toBe(2);
+  });
+
   it('an app group search surfaces its parent catalog', async () => {
     const tickets = await ticketsForKey(APP_A);
     const rels = tickets.map((t) => t.rel);

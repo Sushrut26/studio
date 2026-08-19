@@ -2,7 +2,7 @@ import { ImportClient } from '@/components/ImportClient';
 import { SetupNotice } from '@/components/SetupNotice';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { isDatabaseConfigured } from '@/lib/db';
+import { ensureSchema, isDatabaseConfigured } from '@/lib/db';
 import { listImports } from '@/lib/queries';
 import { formatDate } from '@/lib/utils';
 
@@ -10,6 +10,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function ImportPage() {
   if (!isDatabaseConfigured()) return <SetupNotice />;
+  await ensureSchema();
 
   let imports: Record<string, unknown>[] = [];
   try {

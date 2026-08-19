@@ -1,5 +1,14 @@
 import { NextResponse } from 'next/server';
 import { ZodError } from 'zod';
+import { ensureSchema } from '@/lib/db';
+
+/**
+ * Every route calls this first. Creating the schema on demand is what lets a
+ * fresh deploy work from nothing but a DATABASE_URL.
+ */
+export async function ready(): Promise<void> {
+  await ensureSchema();
+}
 
 export function ok<T>(data: T) {
   return NextResponse.json(data);

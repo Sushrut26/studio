@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { fail, ok } from '@/lib/api';
+import { fail, ok, ready } from '@/lib/api';
 import { getChildren, getKey, getParent, listsForKey, ticketsForKey } from '@/lib/queries';
 
 export const runtime = 'nodejs';
@@ -7,6 +7,7 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(_req: NextRequest, ctx: { params: Promise<{ key: string }> }) {
   try {
+    await ready();
     const { key: rawKey } = await ctx.params;
     const keyText = decodeURIComponent(rawKey);
     const key = await getKey(keyText);

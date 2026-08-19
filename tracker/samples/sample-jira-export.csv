@@ -1,0 +1,9 @@
+Issue key,Summary,Status,Issue Type,Assignee,Reporter,Created,Updated,Description,Comment,Comment
+AZSUP-4101,POS terminal offline at 144488-USA_FBRB_53401230183,Open,Incident,dana,priya,16/Mar/25 3:42 PM,17/Mar/25 8:00 AM,"Store 5340 reports register down since opening.
+App group 144488-USA_FBRB_534050611 also impacted on the same controller.",Escalated to L2 on 16/Mar,Awaiting replacement parts
+AZSUP-4102,Catalog-wide sync failure,In Progress,Incident,rio,priya,17/Mar/25 9:05 AM,18/Mar/25 1:15 PM,"Catalog 144488-USA_FBRB_5340 failing nightly sync across all stores in the region.",Root cause identified as expired cert,
+AZSUP-4103,Receipt printer jam,Closed,Task,dana,sam,17/Mar/25 11:00 AM,17/Mar/25 4:00 PM,Mechanical issue only. No catalog or app group involved.,Resolved on site,
+AZSUP-4104,Scanner fault at 144488-USA_FBRB_534074933,Open,Incident,sam,priya,18/Mar/25 8:15 AM,19/Mar/25 9:30 AM,"Second occurrence this month for 144488-USA_FBRB_534074933. Ticket AZ-9999 refers.",Monitoring,Recurring - see Mar report
+AZSUP-4105,Brazil register issue,Open,Incident,rio,dana,18/Mar/25 2:30 PM,19/Mar/25 11:00 AM,"Affects 45489-BRA_OXYN_12345 and app group 45489-BRA_OXYN_1234501991.",Vendor engaged,
+AZSUP-4106,Mexico store outage,Waiting for Verification,Incident,sam,dana,19/Mar/25 10:00 AM,20/Mar/25 8:00 AM,"45489-MEX_OXYN_12346 reported down. Opened 2025-03-19 per store log.",,
+AZSUP-4107,Repeat sync failure on 144488-USA_FBRB_53401826801,Open,Incident,dana,priya,20/Mar/25 7:45 AM,20/Mar/25 5:00 PM,"Same controller as AZSUP-4101. App group 144488-USA_FBRB_53401826801 down again.",Third occurrence,Escalating to vendor

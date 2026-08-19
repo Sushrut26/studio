@@ -3,18 +3,12 @@ import { ArrowRight } from 'lucide-react';
 import { DashboardClient } from '@/components/DashboardClient';
 import { SetupNotice } from '@/components/SetupNotice';
 import { Card, CardContent } from '@/components/ui/card';
-import { isDatabaseConfigured } from '@/lib/db';
+import { ensureSchema, isDatabaseConfigured } from '@/lib/db';
 import { dashboardStats } from '@/lib/queries';
 
 export const dynamic = 'force-dynamic';
 
-async function Stats() {
-  let stats: Record<string, number> | null = null;
-  try {
-    stats = await dashboardStats();
-  } catch {
-    return null;
-  }
+async function Stats({ stats }: { stats: Record<string, number> }) {
 
   const tiles = [
     { label: 'Tickets', value: stats.ticket_count, href: '/tickets' },
@@ -56,6 +50,14 @@ export default async function DashboardPage() {
     );
   }
 
+  let stats: Record<string, number> | null = null;
+  try {
+    stats = await dashboardStats();
+  } catch {
+    stats = null;
+  }
+  const isEmpty = !stats || Number(stats.ticket_count ?? 0) === 0;
+
   return (
     <div className="space-y-8">
       <div>
@@ -65,15 +67,18 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      <Stats />
+      {stats && <Stats stats={stats} />}
       <DashboardClient />
 
-      <p className="text-sm text-muted-foreground">
-        No data yet?{' '}
-        <Link href="/import" className="inline-flex items-center gap-1 text-primary hover:underline">
-          Import a JIRA CSV export <ArrowRight className="size-3.5" />
-        </Link>
-      </p>
+      {/* Only worth saying when it is actually true. */}
+      {isEmpty && (
+        <p className="text-sm text-muted-foreground">
+          No data yet?{' '}
+          <Link href="/import" className="inline-flex items-center gap-1 text-primary hover:underline">
+            Import a JIRA CSV export <ArrowRight className="size-3.5" />
+          </Link>
+        </p>
+      )}
     </div>
   );
 }

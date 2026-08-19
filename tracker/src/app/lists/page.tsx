@@ -3,7 +3,7 @@ import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { SetupNotice } from '@/components/SetupNotice';
-import { isDatabaseConfigured } from '@/lib/db';
+import { ensureSchema, isDatabaseConfigured } from '@/lib/db';
 import { getLists } from '@/lib/queries';
 import { formatDate, pluralize } from '@/lib/utils';
 
@@ -11,6 +11,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function ListsPage() {
   if (!isDatabaseConfigured()) return <SetupNotice />;
+  await ensureSchema();
   const lists = await getLists();
 
   return (

@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { fail, ok } from '@/lib/api';
+import { fail, ok, ready } from '@/lib/api';
 import { registerCatalogsSchema } from '@/lib/schemas';
 import { registerCatalog } from '@/lib/queries';
 import { parseKey } from '@/lib/keys/pattern';
@@ -14,6 +14,7 @@ export const maxDuration = 60;
  */
 export async function POST(req: NextRequest) {
   try {
+    await ready();
     const { keys } = registerCatalogsSchema.parse(await req.json());
     const valid = [...new Set(keys.map((k) => k.trim()).filter((k) => parseKey(k)))];
     const invalid = keys.length - valid.length;

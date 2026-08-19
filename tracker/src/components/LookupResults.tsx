@@ -164,7 +164,9 @@ export function LookupResults({ rows }: { rows: LookupRow[] }) {
                       )}
                     </TableCell>
                     <TableCell className="text-right">
-                      {row.listCount > 0 ? (
+                      {unrecognized ? (
+                        <span className="text-muted-foreground">—</span>
+                      ) : row.listCount > 0 ? (
                         <span className="font-medium text-success">{row.listCount}</span>
                       ) : (
                         <Badge variant="outline">{row.known ? 'none' : 'new'}</Badge>

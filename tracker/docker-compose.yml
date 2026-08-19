@@ -1,0 +1,22 @@
+# Local Postgres for development. Started by `npm run db:up`.
+# Port 55432 rather than 5432 so it cannot clash with a Postgres you already run.
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: tracker-postgres
+    environment:
+      POSTGRES_USER: tracker
+      POSTGRES_PASSWORD: tracker
+      POSTGRES_DB: tracker
+    ports:
+      - '55432:5432'
+    volumes:
+      - tracker-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U tracker -d tracker']
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  tracker-pgdata:

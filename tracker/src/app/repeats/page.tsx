@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { KeyLink } from '@/components/KeyBadge';
 import { RepeatsChart } from '@/components/RepeatsChart';
 import { SetupNotice } from '@/components/SetupNotice';
-import { isDatabaseConfigured } from '@/lib/db';
+import { ensureSchema, isDatabaseConfigured } from '@/lib/db';
 import { catalogRepeats, dashboardStats, listOverlap } from '@/lib/queries';
 
 export const dynamic = 'force-dynamic';
@@ -16,6 +16,7 @@ export default async function RepeatsPage({
   searchParams: Promise<{ minLists?: string; country?: string }>;
 }) {
   if (!isDatabaseConfigured()) return <SetupNotice />;
+  await ensureSchema();
 
   const sp = await searchParams;
   const minLists = Number(sp.minLists ?? '0') || 0;
