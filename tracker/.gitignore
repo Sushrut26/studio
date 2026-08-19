@@ -1,0 +1,8 @@
+node_modules/
+.next/
+.env*.local
+*.tsbuildinfo
+next-env.d.ts
+
+# The repo root ignores .env*; this template carries no secrets and should ship.
+!.env.example
