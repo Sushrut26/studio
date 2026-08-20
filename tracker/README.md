@@ -102,7 +102,12 @@ edit your data. Two ways to close that without touching code:
 
 - Set `TRACKER_PASSWORD`, then visit `https://your-app.vercel.app/?key=<password>` once. The
   middleware stores a cookie for 90 days. Leave the variable unset and every request passes through.
-- Or use Vercel's built-in deployment protection.
+  **Env var changes only apply to the next build** — setting or editing it does nothing to an
+  already-running deployment, so redeploy right after. Until you redeploy, the site stays exactly
+  as open (or as gated) as it was before the change.
+- Or use Vercel's deployment protection (Settings → Deployment Protection). Password protection
+  there is a paid **Advanced Deployment Protection** add-on, not included on the Hobby plan — the
+  `TRACKER_PASSWORD` route above is the free option.
 
 ## Using it
 
