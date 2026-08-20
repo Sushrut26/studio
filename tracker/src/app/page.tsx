@@ -50,6 +50,8 @@ export default async function DashboardPage() {
     );
   }
 
+  await ensureSchema();
+
   let stats: Record<string, number> | null = null;
   try {
     stats = await dashboardStats();
