@@ -4,6 +4,25 @@ import { NextResponse } from 'next/server';
 const COOKIE = 'tracker_auth';
 
 /**
+ * Constant-time string comparison.
+ *
+ * Middleware always runs on the Edge runtime, so this uses Web Crypto-friendly
+ * byte comparison rather than Node's crypto.timingSafeEqual, which isn't
+ * available there. Plain `===` on the password would let a network attacker
+ * infer it one byte at a time from response timing; this XORs every byte
+ * without short-circuiting, so equal-length strings always take the same time
+ * to compare regardless of where they first differ.
+ */
+function timingSafeEqual(a: string, b: string): boolean {
+  const aBytes = new TextEncoder().encode(a);
+  const bBytes = new TextEncoder().encode(b);
+  if (aBytes.length !== bBytes.length) return false;
+  let diff = 0;
+  for (let i = 0; i < aBytes.length; i++) diff |= aBytes[i] ^ bBytes[i];
+  return diff === 0;
+}
+
+/**
  * Optional single-password gate.
  *
  * The app is designed to run without a login. But on a public Vercel URL that
@@ -24,10 +43,12 @@ export function middleware(req: NextRequest) {
   const { pathname, searchParams } = req.nextUrl;
   if (pathname.startsWith('/_next') || pathname === '/favicon.ico') return res;
 
-  if (req.cookies.get(COOKIE)?.value === password) return res;
+  const cookieValue = req.cookies.get(COOKIE)?.value;
+  if (cookieValue && timingSafeEqual(cookieValue, password)) return res;
 
   // ?key=<password> sets the cookie once, then redirects to a clean URL.
-  if (searchParams.get('key') === password) {
+  const keyParam = searchParams.get('key');
+  if (keyParam && timingSafeEqual(keyParam, password)) {
     const url = req.nextUrl.clone();
     url.searchParams.delete('key');
     const redirect = NextResponse.redirect(url);
